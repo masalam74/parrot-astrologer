@@ -1,0 +1,618 @@
+     1→'use client';
+     2→
+     3→import { useState, useCallback, useEffect, useRef } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→
+     6→// ====== DATA ======
+     7→
+     8→const ZODIAC_SIGNS = [
+     9→  'Aries \u2648', 'Taurus \u2649', 'Gemini \u264A', 'Cancer \u264B',
+    10→  'Leo \u264C', 'Virgo \u264D', 'Libra \u264E', 'Scorpio \u264F',
+    11→  'Sagittarius \u2650', 'Capricorn \u2651', 'Aquarius \u2652', 'Pisces \u2653',
+    12→];
+    13→
+    14→const FOCUS_AREAS = ['Love', 'Career', 'Family Gossip', 'General Future'];
+    15→
+    16→const DEITY_CARDS = [
+    17→  { name: 'Lakshmi', emoji: '\uD83C\uDF35', energy: 'abundance and prosperity' },
+    18→  { name: 'Shiva', emoji: '\uD83D\uDD31', energy: 'transformation and inner power' },
+    19→  { name: 'Ganesha', emoji: '\uD83D\uDC18', energy: 'new beginnings and wisdom' },
+    20→  { name: 'Krishna', emoji: '\uD83E\uDE88', energy: 'divine love and joy' },
+    21→  { name: 'Saraswati', emoji: '\uD83C\uDFB5', energy: 'knowledge and creativity' },
+    22→  { name: 'Durga', emoji: '\uD83D\uDCA0', energy: 'courage and protection' },
+    23→];
+    24→
+    25→const FORTUNE_TEMPLATES: Record<string, string[]> = {
+    26→  Love: [
+    27→    'Ah, look here my child! The mystic {deity} has blessed your path with radiant {energy}. {name}, as a {zodiac}, your heart chakra is ablaze! Someone from your past carries a secret longing for you. The stars whisper: be bold, be vulnerable. Venus dances in your 7th house this fortnight. A handwritten letter will change everything. Trust the parrot, {name}!',
+    28→    'Oho {name}! The great {deity} card reveals deep {energy} flowing toward you! Your {zodiac} moon is glowing like a temple lamp. A surprise encounter near water will set your heart racing. The parrot sees two paths merging into one beautiful destiny. Open your doors, {name} — love is already knocking!',
+    29→  ],
+    30→  Career: [
+    31→    'Arrey {name}, the {deity} has chosen you! Such powerful {energy} surrounds your {zodiac} chart! The parrot found the card of destiny — your career is about to take a spectacular turn. A promotion or new opportunity comes within 14 days. Jupiter is sitting in your 10th house, my child. Speak up in that meeting. Your boss has been watching you!',
+    32→    'See here {name}, the sacred {deity} shines with {energy} upon your {zodiac} stars! The cards never lie — a financial breakthrough is closer than you think. Someone senior will offer you guidance. Accept it with humility. The parrot pecked three times at your fortune card — that means triple success ahead!',
+    33→  ],
+    34→  'Family Gossip': [
+    35→    'Ha ha {name}! The clever {deity} brings juicy {energy} to your {zodiac} household! The parrot heard everything — a family reunion is brewing. That aunt who stopped calling? She will call this week with big news! Also, someone in your family is hiding a happy secret. The parrot guarantees: laughter and sweets are coming your way, {name}!',
+    36→    'Listen carefully {name}! The mystical {deity} reveals {energy} in your family stars! As a {zodiac}, your 4th house is lit up like Diwali. A long-lost relative will return with gifts. That cousin you argued with? They are ready to make peace. The parrot sees a feast in your future — literally and figuratively!',
+    37→  ],
+    38→  'General Future': [
+    39→    'Ah {name}, my child! The divine {deity} has answered! Your {zodiac} chart is blessed with {energy}. The next 30 days bring unexpected travel, a sum of money you forgot about, and a compliment that will make your week. The parrot has spoken — your luck is turning! Carry a green cloth in your wallet for extra blessings!',
+    40→    'Wonderful {name}! The great {deity} card appeared with magnificent {energy}! Your {zodiac} stars are aligning like a perfect rangoli. Health improves, finances stabilize, and a friend from far away sends good news. The parrot selected this card especially for you — that is rare! You are entering your golden phase, {name}!',
+    41→  ],
+    42→};
+    43→
+    44→// ====== COMPONENTS ======
+    45→
+    46→function CagedParrot({ className = '', animating = false }: { className?: string; animating?: boolean }) {
+    47→  return (
+    48→    <div className={`relative ${className}`} style={{ width: '140px', height: '160px' }}>
+    49→      <svg viewBox="0 0 200 220" className="w-full h-full drop-shadow-lg" aria-label="Caged parrot astrologer">
+    50→        {/* Cage dome outline */}
+    51→        <path d="M30,175 Q30,18 100,12 Q170,18 170,175" fill="none" stroke="#d4a017" strokeWidth="2.5" opacity="0.9" />
+    52→        {/* Cage inner dome */}
+    53→        <path d="M36,175 Q36,28 100,22 Q164,28 164,175" fill="none" stroke="#d4a017" strokeWidth="1" opacity="0.35" />
+    54→        {/* Cage vertical bars */}
+    55→        <line x1="48" y1="42" x2="48" y2="175" stroke="#b8860b" strokeWidth="1.5" opacity="0.5" />
+    56→        <line x1="65" y1="25" x2="65" y2="175" stroke="#b8860b" strokeWidth="1.5" opacity="0.5" />
+    57→        <line x1="82" y1="16" x2="82" y2="175" stroke="#b8860b" strokeWidth="1.5" opacity="0.5" />
+    58→        <line x1="100" y1="13" x2="100" y2="175" stroke="#b8860b" strokeWidth="1.5" opacity="0.5" />
+    59→        <line x1="118" y1="16" x2="118" y2="175" stroke="#b8860b" strokeWidth="1.5" opacity="0.5" />
+    60→        <line x1="135" y1="25" x2="135" y2="175" stroke="#b8860b" strokeWidth="1.5" opacity="0.5" />
+    61→        <line x1="152" y1="42" x2="152" y2="175" stroke="#b8860b" strokeWidth="1.5" opacity="0.5" />
+    62→        {/* Cage horizontal bars */}
+    63→        <line x1="34" y1="55" x2="166" y2="55" stroke="#b8860b" strokeWidth="1" opacity="0.3" />
+    64→        <line x1="32" y1="85" x2="168" y2="85" stroke="#b8860b" strokeWidth="1" opacity="0.3" />
+    65→        <line x1="32" y1="115" x2="168" y2="115" stroke="#b8860b" strokeWidth="1" opacity="0.3" />
+    66→        <line x1="32" y1="145" x2="168" y2="145" stroke="#b8860b" strokeWidth="1" opacity="0.3" />
+    67→        {/* Cage base */}
+    68→        <rect x="18" y="173" width="164" height="9" rx="3" fill="#8b5e14" />
+    69→        <rect x="18" y="182" width="164" height="5" rx="2" fill="#6b4510" />
+    70→        {/* Stand pole */}
+    71→        <rect x="93" y="187" width="14" height="22" rx="2" fill="#6b4510" />
+    72→        {/* Stand base */}
+    73→        <ellipse cx="100" cy="212" rx="30" ry="6" fill="#8b5e14" />
+    74→        {/* Perch inside cage */}
+    75→        <line x1="50" y1="135" x2="150" y2="135" stroke="#a0522d" strokeWidth="3.5" strokeLinecap="round" />
+    76→        {/* ---- PARROT (centered in cage, sitting on perch) ---- */}
+    77→        {/* Tail feathers (behind body) */}
+    78→        <path d="M125,108 Q148,118 140,135" stroke="#247a30" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+    79→        <path d="M122,112 Q142,125 135,140" stroke="#1d6328" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+    80→        {/* Body */}
+    81→        <ellipse cx="100" cy="110" rx="26" ry="30" fill="#2d8c3c" />
+    82→        <ellipse cx="100" cy="110" rx="22" ry="26" fill="#3da84e" />
+    83→        {/* Wing */}
+    84→        <ellipse cx="85" cy="105" rx="14" ry="20" fill="#247a30" transform="rotate(-8, 85, 105)" />
+    85→        <ellipse cx="85" cy="105" rx="11" ry="16" fill="#2d8c3c" transform="rotate(-8, 85, 105)" />
+    86→        {/* Belly highlight */}
+    87→        <ellipse cx="100" cy="115" rx="12" ry="16" fill="#4db85e" opacity="0.4" />
+    88→        {/* Head */}
+    89→        <circle cx="100" cy="72" r="18" fill="#3da84e" />
+    90→        {/* Eye ring */}
+    91→        <circle cx="92" cy="69" r="5.5" fill="white" />
+    92→        <circle cx="92" cy="69" r="3.2" fill="#1a1a1a" />
+    93→        <circle cx="91" cy="68" r="1.1" fill="white" />
+    94→        {/* Cheek blush */}
+    95→        <circle cx="87" cy="75" r="3.5" fill="#e8768a" opacity="0.25" />
+    96→        {/* Beak */}
+    97→        <path d="M82,74 L70,72 L82,78 Z" fill="#f4a623" />
+    98→        <path d="M82,76 L70,72 L82,74 Z" fill="#e8951a" />
+    99→        {/* Head crest */}
+   100→        <path d="M95,56 Q100,42 105,56" fill="#f4a623" strokeWidth="2" />
+   101→        <path d="M97,58 Q102,46 107,58" fill="#e8951a" strokeWidth="1.5" />
+   102→        {/* Feet gripping perch */}
+   103→        <line x1="90" y1="138" x2="86" y2="133" stroke="#e8951a" strokeWidth="2" strokeLinecap="round" />
+   104→        <line x1="86" y1="133" x2="80" y2="133" stroke="#e8951a" strokeWidth="1.8" strokeLinecap="round" />
+   105→        <line x1="86" y1="133" x2="88" y2="136" stroke="#e8951a" strokeWidth="1.8" strokeLinecap="round" />
+   106→        <line x1="106" y1="138" x2="110" y2="133" stroke="#e8951a" strokeWidth="2" strokeLinecap="round" />
+   107→        <line x1="110" y1="133" x2="116" y2="133" stroke="#e8951a" strokeWidth="1.8" strokeLinecap="round" />
+   108→        <line x1="110" y1="133" x2="108" y2="136" stroke="#e8951a" strokeWidth="1.8" strokeLinecap="round" />
+   109→        {/* Sparkle when animating */}
+   110→        {animating && (
+   111→          <g>
+   112→            <circle cx="140" cy="60" r="2" fill="#ffd700" opacity="0.8">
+   113→              <animate attributeName="opacity" values="0;1;0" dur="1.2s" repeatCount="indefinite" />
+   114→              <animate attributeName="r" values="1;3;1" dur="1.2s" repeatCount="indefinite" />
+   115→            </circle>
+   116→            <circle cx="55" cy="50" r="2" fill="#ffd700" opacity="0.6">
+   117→              <animate attributeName="opacity" values="0;0.8;0" dur="1.5s" repeatCount="indefinite" begin="0.3s" />
+   118→              <animate attributeName="r" values="1;2.5;1" dur="1.5s" repeatCount="indefinite" begin="0.3s" />
+   119→            </circle>
+   120→          </g>
+   121→        )}
+   122→      </svg>
+   123→    </div>
+   124→  );
+   125→}
+   126→
+   127→function CardDeck({ shaking = false }: { shaking?: boolean }) {
+   128→  const layers = [
+   129→    { offset: 0, rotate: -2, scale: 1 },
+   130→    { offset: -2, rotate: 1, scale: 0.98 },
+   131→    { offset: -4, rotate: -1.5, scale: 0.96 },
+   132→    { offset: -6, rotate: 2, scale: 0.94 },
+   133→    { offset: -8, rotate: -0.5, scale: 0.92 },
+   134→  ];
+   135→
+   136→  return (
+   137→    <div className="card-3d-stack relative" style={{ width: '100px', height: '130px' }}>
+   138→      {layers.map((layer, i) => (
+   139→        <div
+   140→          key={i}
+   141→          className={`card-layer ${shaking ? 'animate-deck-shake' : ''}`}
+   142→          style={{
+   143→            left: '10px',
+   144→            top: `${layer.offset}px`,
+   145→            transform: `rotate(${layer.rotate}deg) scale(${layer.scale})`,
+   146→            zIndex: i,
+   147→          }}
+   148→        >
+   149→          <div className="absolute inset-2 rounded-md border border-yellow-600/40 flex items-center justify-center">
+   150→            <span className="text-yellow-500/40 text-xs font-bold select-none">\u0909</span>
+   151→          </div>
+   152→        </div>
+   153→      ))}
+   154→    </div>
+   155→  );
+   156→}
+   157→
+   158→// ====== NATIVE AD SLOT ======
+   159→// Replace placeholder with real AdSense code:
+   160→// <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXX" data-ad-slot="XXXX" data-ad-format="auto" data-full-width-responsive="true"></ins>
+   161→// <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+   162→function AdSlot({ label }: { label: string }) {
+   163→  return (
+   164→    <div
+   165→      className="rounded-xl border-2 border-dashed border-amber-300/30 bg-amber-50/50 flex flex-col items-center justify-center p-3 text-center"
+   166→      style={{ minHeight: '250px' }}
+   167→      aria-label="Advertisement"
+   168→    >
+   169→      <div className="w-10 h-10 rounded-full bg-amber-200/50 flex items-center justify-center mb-2">
+   170→        <svg className="w-5 h-5 text-amber-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+   171→          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+   172→        </svg>
+   173→      </div>
+   174→      <p className="text-[10px] text-amber-500/40 font-mono leading-tight">
+   175→        Ad Placement
+   176→      </p>
+   177→      <p className="text-[9px] text-amber-400/25 mt-0.5 font-mono">
+   178→        {label}
+   179→      </p>
+   180→    </div>
+   181→  );
+   182→}
+   183→
+   184→// Helper component to handle WhatsApp share
+   185→function ShareTrigger({ text, trigger }: { text: string; trigger: () => void }) {
+   186→  const shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+   187→  const lastTriggerRef = useRef(0);
+   188→
+   189→  useEffect(() => {
+   190→    // This component just provides the share URL via the parent
+   191→    // The actual share is handled by the parent's onShare
+   192→  }, [text]);
+   193→
+   194→  // Expose share functionality
+   195→  useEffect(() => {
+   196→    (window as unknown as Record<string, string>).__kiliShareUrl = shareUrl;
+   197→    return () => {
+   198→      delete (window as unknown as Record<string, string>).__kiliShareUrl;
+   199→    };
+   200→  }, [shareUrl]);
+   201→
+   202→  return null;
+   203→}
+   204→
+   205→// ====== MAIN PAGE ======
+   206→
+   207→type GamePhase = 'idle' | 'hopping' | 'shaking' | 'revealing' | 'fortune';
+   208→
+   209→export default function Home() {
+   210→  const [name, setName] = useState('');
+   211→  const [zodiac, setZodiac] = useState('');
+   212→  const [focus, setFocus] = useState('');
+   213→  const [phase, setPhase] = useState<GamePhase>('idle');
+   214→  const [selectedDeity, setSelectedDeity] = useState<typeof DEITY_CARDS[0] | null>(null);
+   215→  const [fortune, setFortune] = useState('');
+   216→  const [formError, setFormError] = useState('');
+   217→
+   218→  const isAnimating = phase !== 'idle' && phase !== 'fortune';
+   219→
+   220→  const generateFortune = useCallback(
+   221→    (deity: typeof DEITY_CARDS[0], seekerName: string, seekerZodiac: string, seekerFocus: string) => {
+   222→      const templates = FORTUNE_TEMPLATES[seekerFocus] || FORTUNE_TEMPLATES['General Future'];
+   223→      const template = templates[Math.floor(Math.random() * templates.length)];
+   224→      return template
+   225→        .replace(/{deity}/g, deity.name)
+   226→        .replace(/{energy}/g, deity.energy)
+   227→        .replace(/{name}/g, seekerName)
+   228→        .replace(/{zodiac}/g, seekerZodiac);
+   229→    },
+   230→    []
+   231→  );
+   232→
+   233→  const handleAskParrot = () => {
+   234→    if (!name.trim()) {
+   235→      setFormError('Please enter your name, seeker!');
+   236→      return;
+   237→    }
+   238→    if (!zodiac) {
+   239→      setFormError('Choose your zodiac sign!');
+   240→      return;
+   241→    }
+   242→    if (!focus) {
+   243→      setFormError('Select a life focus area!');
+   244→      return;
+   245→    }
+   246→    setFormError('');
+   247→
+   248→    // Phase 1: Parrot hops to the deck
+   249→    setPhase('hopping');
+   250→
+   251→    // Phase 2: Deck shakes (parrot rummaging)
+   252→    setTimeout(() => {
+   253→      setPhase('shaking');
+   254→    }, 1500);
+   255→
+   256→    // Phase 3: Card reveals
+   257→    setTimeout(() => {
+   258→      const deity = DEITY_CARDS[Math.floor(Math.random() * DEITY_CARDS.length)];
+   259→      setSelectedDeity(deity);
+   260→      const fortuneText = generateFortune(deity, name.trim(), zodiac, focus);
+   261→      setFortune(fortuneText);
+   262→      setPhase('revealing');
+   263→    }, 3200);
+   264→
+   265→    // Phase 4: Show fortune directly (no ad wall!)
+   266→    setTimeout(() => {
+   267→      setPhase('fortune');
+   268→    }, 4200);
+   269→  };
+   270→
+   271→  const handleShare = () => {
+   272→    const shareUrl = (window as unknown as Record<string, string>).__kiliShareUrl;
+   273→    if (shareUrl) {
+   274→      window.open(shareUrl, '_blank');
+   275→    }
+   276→  };
+   277→
+   278→  const shareText = selectedDeity
+   279→    ? `\uD83D\uDC99 *Parrot Astrologer - Kili Josiyam* \uD83D\uDC99\n\n\uD83D\uDD39 *Seeker:* ${name.trim()}\n\uD83D\uDD39 *Zodiac:* ${zodiac}\n\uD83D\uDD39 *Focus:* ${focus}\n\uD83D\uDD39 *Deity Card:* ${selectedDeity.emoji} ${selectedDeity.name}\n\n\uD83D\uDCDD *Your Fortune:*\n${fortune}\n\n\uD83E\uDD8A Try it yourself!`
+   280→    : '';
+   281→
+   282→  const handleRetry = () => {
+   283→    setPhase('idle');
+   284→    setSelectedDeity(null);
+   285→    setFortune('');
+   286→    setFormError('');
+   287→  };
+   288→
+   289→  return (
+   290→    <div className="min-h-screen flex flex-col parchment-bg">
+   291→      {/* Decorative top border */}
+   292→      <div className="h-2 bg-gradient-to-r from-red-900 via-amber-500 to-red-900" />
+   293→
+   294→      {/* Header with Caged Parrot */}
+   295→      <header className="relative bg-gradient-to-b from-red-900 via-red-800 to-amber-900 text-center py-5 px-4 shadow-lg">
+   296→        <div className="absolute inset-0 opacity-10">
+   297→          <div className="absolute inset-0" style={{
+   298→            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffd700' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+   299→          }} />
+   300→        </div>
+   301→        <div className="relative flex flex-col items-center">
+   302→          <h1 className="text-3xl sm:text-4xl font-bold text-amber-100 tracking-wide" style={{ fontFamily: 'serif', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
+   303→            Parrot Astrologer
+   304→          </h1>
+   305→          <p className="text-amber-300/80 text-sm mt-1 italic">
+   306→            Sacred Kili Josiyam from the Streets of South India
+   307→          </p>
+   308→        </div>
+   309→      </header>
+   310→
+   311→      {/* Main content */}
+   312→      <main className="flex-1 flex flex-col items-center px-4 py-6 gap-6">
+   313→        {/* Canvas area: Parrot + Deck */}
+   314→        <div className="w-full max-w-md">
+   315→          <div
+   316→            className="relative rounded-2xl p-6 overflow-hidden mystic-border shadow-xl"
+   317→            style={{
+   318→              background: 'linear-gradient(180deg, #3d1c0a 0%, #5a2d0e 40%, #7a3b15 100%)',
+   319→              minHeight: '220px',
+   320→            }}
+   321→          >
+   322→            {/* Mat texture overlay */}
+   323→            <div className="absolute inset-0 opacity-20 rounded-2xl" style={{
+   324→              backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(255,200,100,0.08) 8px, rgba(255,200,100,0.08) 9px), repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,200,100,0.05) 8px, rgba(255,200,100,0.05) 9px)`,
+   325→            }} />
+   326→
+   327→            {/* Decorative corner kolam/paisley elements */}
+   328→            <svg className="absolute top-1 left-1 w-6 h-6 text-amber-500/25" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+   329→            <svg className="absolute top-1 right-1 w-6 h-6 text-amber-500/25" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+   330→            <svg className="absolute bottom-1 left-1 w-6 h-6 text-amber-500/25 -scale-x-100" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+   331→            <svg className="absolute bottom-1 right-1 w-6 h-6 text-amber-500/25 -scale-x-100" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+   332→
+   333→            {/* Parrot and Deck area */}
+   334→            <div className="relative flex items-center justify-between min-h-[160px]">
+   335→              {/* Parrot */}
+   336→              <motion.div
+   337→                animate={
+   338→                  phase === 'hopping'
+   339→                    ? { x: [0, 20, 40, 55, 60], y: [0, -20, 0, -12, 5] }
+   340→                    : phase === 'shaking'
+   341→                    ? { x: 60, y: 5 }
+   342→                    : phase === 'revealing' || phase === 'ad' || phase === 'fortune'
+   343→                    ? { x: 0, y: 0 }
+   344→                    : {}
+   345→                }
+   346→                transition={
+   347→                  phase === 'hopping'
+   348→                    ? { duration: 1.4, ease: 'easeInOut' }
+   349→                    : phase === 'revealing'
+   350→                    ? { duration: 0.6, ease: 'easeOut' }
+   351→                    : { duration: 0 }
+   352→                }
+   353→                className="z-10"
+   354→              >
+   355→                <div className={phase === 'idle' ? 'animate-parrot-idle' : ''}>
+   356→                  <CagedParrot animating={phase === 'hopping' || phase === 'shaking'} />
+   357→                </div>
+   358→              </motion.div>
+   359→
+   360→              {/* Card Deck */}
+   361→              <motion.div
+   362→                animate={
+   363→                  phase === 'hopping'
+   364→                    ? { scale: 1 }
+   365→                    : phase === 'revealing' || phase === 'ad' || phase === 'fortune'
+   366→                    ? { scale: 0.7, opacity: 0.4 }
+   367→                    : {}
+   368→                }
+   369→                transition={{ duration: 0.4 }}
+   370→                className="z-0"
+   371→              >
+   372→                <CardDeck shaking={phase === 'shaking'} />
+   373→              </motion.div>
+   374→            </div>
+   375→
+   376→            {/* Rummaging text */}
+   377→            <AnimatePresence>
+   378→              {phase === 'shaking' && (
+   379→                <motion.p
+   380→                  initial={{ opacity: 0, y: 10 }}
+   381→                  animate={{ opacity: 1, y: 0 }}
+   382→                  exit={{ opacity: 0 }}
+   383→                  className="text-center text-amber-400/80 text-sm italic mt-2"
+   384→                >
+   385→                  The mystic parrot rummages through the sacred cards...
+   386→                </motion.p>
+   387→              )}
+   388→            </AnimatePresence>
+   389→
+   390→            {/* Revealed card (appears in center) */}
+   391→            <AnimatePresence>
+   392→              {(phase === 'revealing' || phase === 'ad' || phase === 'fortune') && selectedDeity && (
+   393→                <motion.div
+   394→                  initial={{ opacity: 0, scale: 0.5, rotateY: 180 }}
+   395→                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+   396→                  transition={{ duration: 0.6, ease: 'easeOut' }}
+   397→                  className="absolute inset-0 flex items-center justify-center z-20"
+   398→                >
+   399→                  <div className="card-revealed rounded-2xl p-5 text-center shadow-2xl">
+   400→                    <div className="text-5xl mb-2">{selectedDeity.emoji}</div>
+   401→                    <h3 className="text-xl font-bold text-red-800" style={{ fontFamily: 'serif' }}>
+   402→                      {selectedDeity.name}
+   403→                    </h3>
+   404→                    <p className="text-xs text-amber-800/60 mt-1 capitalize">{selectedDeity.energy}</p>
+   405→                  </div>
+   406→                </motion.div>
+   407→              )}
+   408→            </AnimatePresence>
+   409→          </div>
+   410→        </div>
+   411→
+   412→        {/* Input Form (visible in idle phase) */}
+   413→        <AnimatePresence>
+   414→          {phase === 'idle' && (
+   415→            <motion.div
+   416→              initial={{ opacity: 1, y: 0 }}
+   417→              exit={{ opacity: 0, y: -20, height: 0, overflow: 'hidden' }}
+   418→              transition={{ duration: 0.3 }}
+   419→              className="w-full max-w-md space-y-4"
+   420→            >
+   421→              <div className="parchment-bg parchment-texture rounded-2xl p-5 mystic-border shadow-lg space-y-4">
+   422→                <h2 className="text-center text-lg font-bold text-red-900" style={{ fontFamily: 'serif' }}>
+   423→                  Seek Your Fortune
+   424→                </h2>
+   425→
+   426→                {formError && (
+   427→                  <div className="bg-red-100 border border-red-300 text-red-800 text-sm rounded-lg px-3 py-2 text-center">
+   428→                    {formError}
+   429→                  </div>
+   430→                )}
+   431→
+   432→                {/* Name input */}
+   433→                <div>
+   434→                  <label htmlFor="seeker-name" className="block text-sm font-semibold text-amber-900 mb-1.5">
+   435→                    Seeker&apos;s Name
+   436→                  </label>
+   437→                  <input
+   438→                    id="seeker-name"
+   439→                    type="text"
+   440→                    value={name}
+   441→                    onChange={(e) => { setName(e.target.value); setFormError(''); }}
+   442→                    placeholder="Enter your name..."
+   443→                    disabled={isAnimating}
+   444→                    className="w-full px-4 py-2.5 rounded-xl border-2 border-amber-300/50 bg-white/80 text-stone-800 placeholder-stone-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all text-sm"
+   445→                  />
+   446→                </div>
+   447→
+   448→                {/* Zodiac dropdown */}
+   449→                <div>
+   450→                  <label htmlFor="zodiac-select" className="block text-sm font-semibold text-amber-900 mb-1.5">
+   451→                    Zodiac Sign
+   452→                  </label>
+   453→                  <select
+   454→                    id="zodiac-select"
+   455→                    value={zodiac}
+   456→                    onChange={(e) => { setZodiac(e.target.value); setFormError(''); }}
+   457→                    disabled={isAnimating}
+   458→                    className="w-full px-4 py-2.5 rounded-xl border-2 border-amber-300/50 bg-white/80 text-stone-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all text-sm appearance-none cursor-pointer"
+   459→                    style={{
+   460→                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23924' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+   461→                      backgroundRepeat: 'no-repeat',
+   462→                      backgroundPosition: 'right 12px center',
+   463→                    }}
+   464→                  >
+   465→                    <option value="">-- Choose your sign --</option>
+   466→                    {ZODIAC_SIGNS.map((sign) => (
+   467→                      <option key={sign} value={sign}>{sign}</option>
+   468→                    ))}
+   469→                  </select>
+   470→                </div>
+   471→
+   472→                {/* Focus area dropdown */}
+   473→                <div>
+   474→                  <label htmlFor="focus-select" className="block text-sm font-semibold text-amber-900 mb-1.5">
+   475→                    Life Focus Area
+   476→                  </label>
+   477→                  <select
+   478→                    id="focus-select"
+   479→                    value={focus}
+   480→                    onChange={(e) => { setFocus(e.target.value); setFormError(''); }}
+   481→                    disabled={isAnimating}
+   482→                    className="w-full px-4 py-2.5 rounded-xl border-2 border-amber-300/50 bg-white/80 text-stone-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all text-sm appearance-none cursor-pointer"
+   483→                    style={{
+   484→                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23924' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+   485→                      backgroundRepeat: 'no-repeat',
+   486→                      backgroundPosition: 'right 12px center',
+   487→                    }}
+   488→                  >
+   489→                    <option value="">-- What do you seek? --</option>
+   490→                    {FOCUS_AREAS.map((area) => (
+   491→                      <option key={area} value={area}>{area}</option>
+   492→                    ))}
+   493→                  </select>
+   494→                </div>
+   495→
+   496→                {/* Ask button */}
+   497→                <button
+   498→                  onClick={handleAskParrot}
+   499→                  className="w-full py-3.5 bg-gradient-to-r from-red-800 via-red-700 to-amber-700 hover:from-red-700 hover:via-red-600 hover:to-amber-600 text-amber-100 font-bold text-base rounded-xl shadow-lg shadow-red-900/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] animate-pulse-border cursor-pointer"
+   500→                  style={{ fontFamily: 'serif' }}
+   501→                >
+   502→                  Ask the Mystic Parrot \u2728
+   503→                </button>
+   504→              </div>
+   505→            </motion.div>
+   506→          )}
+   507→        </AnimatePresence>
+   508→
+   509→        {/* Fortune display with native ad slots (visible in fortune phase) */}
+   510→        <AnimatePresence>
+   511→          {phase === 'fortune' && selectedDeity && (
+   512→            <motion.div
+   513→              initial={{ opacity: 0, y: 30 }}
+   514→              animate={{ opacity: 1, y: 0 }}
+   515→              transition={{ duration: 0.6, ease: 'easeOut' }}
+   516→              className="w-full flex flex-col lg:flex-row items-start justify-center gap-4 lg:gap-6 px-0 lg:px-4"
+   517→            >
+   518→              {/* Left Ad Slot — visible on lg+ screens */}
+   519→              <div className="hidden lg:block w-[160px] xl:w-[200px] flex-shrink-0">
+   520→                <AdSlot label="ad-slot-left-fortune" />
+   521→              </div>
+   522→
+   523→              {/* Center: Fortune content */}
+   524→              <div className="w-full max-w-md mx-auto lg:mx-0 space-y-5">
+   525→                {/* Deity card display */}
+   526→                <div className="card-revealed rounded-2xl p-6 text-center">
+   527→                  <div className="text-6xl mb-3">{selectedDeity.emoji}</div>
+   528→                  <h2 className="text-2xl font-bold text-red-800 mb-1" style={{ fontFamily: 'serif' }}>
+   529→                    {selectedDeity.name}
+   530→                  </h2>
+   531→                  <p className="text-sm text-amber-800/70 italic capitalize">{selectedDeity.energy}</p>
+   532→                </div>
+   533→
+   534→                {/* Parchment fortune box */}
+   535→                <div className="parchment-bg parchment-texture rounded-2xl p-6 mystic-border shadow-xl">
+   536→                  <div className="text-center mb-3">
+   537→                    <span className="text-xs uppercase tracking-[0.2em] text-amber-800/50 font-medium">
+   538→                      The Mystic Parrot Speaks
+   539→                    </span>
+   540→                  </div>
+   541→                  <p className="text-base leading-relaxed text-stone-700 font-serif italic">
+   542→                    &ldquo;{fortune}&rdquo;
+   543→                  </p>
+   544→                  <div className="mt-4 pt-3 border-t border-amber-800/15 flex items-center justify-between text-xs text-amber-800/40">
+   545→                    <span>{name.trim()} &middot; {zodiac}</span>
+   546→                    <span>Parrot Astrologer</span>
+   547→                  </div>
+   548→                </div>
+   549→
+   550→                {/* Action buttons */}
+   551→                <div className="flex gap-3">
+   552→                  <button
+   553→                    onClick={handleShare}
+   554→                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-[#25D366] hover:bg-[#1da851] text-white font-bold rounded-xl shadow-lg shadow-green-900/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+   555→                  >
+   556→                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+   557→                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+   558→                    </svg>
+   559→                    Share on WhatsApp
+   560→                  </button>
+   561→                  <button
+   562→                    onClick={handleRetry}
+   563→                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-amber-800 hover:bg-amber-700 text-cream-100 font-bold rounded-xl shadow-lg shadow-amber-900/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+   564→                    style={{ color: '#fdf6e3' }}
+   565→                  >
+   566→                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+   567→                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+   568→                    </svg>
+   569→                    Try Again
+   570→                  </button>
+   571→                </div>
+   572→
+   573→                {/* Mobile Ad Slot — visible below buttons on smaller screens */}
+   574→                <div className="lg:hidden">
+   575→                  <AdSlot label="ad-slot-mobile-fortune" />
+   576→                </div>
+   577→
+   578→                {/* Hidden share link trigger */}
+   579→                <ShareTrigger text={shareText} trigger={handleShare} />
+   580→              </div>
+   581→
+   582→              {/* Right Ad Slot — visible on lg+ screens */}
+   583→              <div className="hidden lg:block w-[160px] xl:w-[200px] flex-shrink-0">
+   584→                <AdSlot label="ad-slot-right-fortune" />
+   585→              </div>
+   586→            </motion.div>
+   587→          )}
+   588→        </AnimatePresence>
+   589→
+   590→        {/* Loading indicator during animation */}
+   591→        <AnimatePresence>
+   592→          {(phase === 'hopping' || phase === 'shaking') && (
+   593→            <motion.div
+   594→              initial={{ opacity: 0 }}
+   595→              animate={{ opacity: 1 }}
+   596→              exit={{ opacity: 0 }}
+   597→              className="flex flex-col items-center gap-2"
+   598→            >
+   599→              <div className="w-8 h-8 border-3 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+   600→              <p className="text-amber-800/60 text-sm italic">
+   601→                {phase === 'hopping' ? 'The parrot approaches...' : 'Reading the sacred cards...'}
+   602→              </p>
+   603→            </motion.div>
+   604→          )}
+   605→        </AnimatePresence>
+   606→      </main>
+   607→
+   608→      {/* Footer */}
+   609→      <footer className="mt-auto text-center py-4 px-4 bg-red-900/10 border-t border-amber-800/10">
+   610→        <p className="text-xs text-amber-800/40">
+   611→          Parrot Astrologer &mdash; For entertainment purposes only. The parrot knows all, but takes no responsibility.
+   612→        </p>
+   613→      </footer>
+   614→
+   615→
+   616→    </div>
+   617→  );
+   618→}
