@@ -57,9 +57,12 @@ export const metadata: Metadata = {
       "The mystic parrot picks your fortune card! Try free AI Parrot Astrology now.",
     images: [`${SITE_URL}/og-image.png`],
   },
-  robots: {
+    robots: {
     index: true,
     follow: true,
+  },
+  verification: {
+    google: "Lq12C6Pnh_D50PVV3X1A-l6F8CWdYI9v7S9oxBCQYdk",
   },
 };
 
