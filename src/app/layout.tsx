@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     "Tamil astrology",
   ],
   icons: {
-    icon: "logo.svg",
+    icon: "/logo.svg",
   },
   openGraph: {
     title: "🦜 Parrot Astrologer — Kili Josiyam",
