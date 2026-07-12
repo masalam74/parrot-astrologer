@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Footer } from '@/components/Footer';
 
 // ====== DATA ======
 
@@ -623,12 +624,7 @@ export default function Home() {
         </AnimatePresence>
       </main>
 
-      {/* Footer */}
-      <footer className="mt-auto text-center py-4 px-4 bg-red-900/10 border-t border-amber-800/10">
-        <p className="text-xs text-amber-800/40">
-          Parrot Astrologer &mdash; For entertainment purposes only. The parrot knows all, but takes no responsibility.
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }
