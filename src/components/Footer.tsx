@@ -32,6 +32,17 @@ export function Footer() {
             <p className="text-xs leading-relaxed text-amber-200/50">This site is for entertainment purposes only. Parrot Astrologer does not provide real astrological, medical, legal, or financial advice.</p>
           </div>
         </div>
+        <p className="mt-8 text-center text-sm text-amber-100/70">
+          A digital product by{' '}
+          <a
+            href="https://brightorbit-labs.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-amber-300 hover:text-amber-200 hover:underline"
+          >
+            BrightOrbit Labs
+          </a>
+        </p>
         <div className="mt-10 pt-6 border-t border-amber-800/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-amber-200/40">
           <p>&copy; 2026 Parrot Astrologer. All rights reserved.</p>
           <p>Made with devotion to South Indian traditions</p>
