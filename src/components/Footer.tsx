@@ -35,7 +35,7 @@ export function Footer() {
         <p className="mt-8 text-center text-sm text-amber-100/70">
           A digital product by{' '}
           <a
-            href="https://brightorbit-labs.vercel.app/"
+            href="https://brightorbit-labs.pages.dev/"
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-amber-300 hover:text-amber-200 hover:underline"
